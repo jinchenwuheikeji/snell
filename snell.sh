@@ -632,7 +632,7 @@ restart_snell() {
 # 检查服务状态并显示
 check_and_show_status() {
     echo -e "\n${CYAN}+------------------- 服务状态 -------------------------+${RESET}"
-    echo -e "${CYAN}| [服务状态]  Snell: ${snell_status}  ShadowTLS: ${shadowtls_status} |${RESET}"
+    echo -e "${CYAN}| [服务状态]  Snell: [${RED}×${RESET}] 未安装  ShadowTLS: [${RED}×${RESET}] 未安装 |${RESET}"
     echo -e "${CYAN}+-----------------------------------------------------+${RESET}\n"
 }
 
@@ -944,13 +944,13 @@ show_menu() {
     echo -e "${CYAN}|  作者: Jinchenwu      网站: lovepro.com              |${RESET}"
     echo -e "${CYAN}+------------------------------------------------------+${RESET}"
     # 显示服务状态（精简版，主菜单顶部一行）
-    local snell_status="[${RED}×${RESET}] 未安装"
-    local shadowtls_status="[${RED}×${RESET}] 未安装"
+    local snell_status="${RED}×${RESET} 未安装"
+    local shadowtls_status="${RED}×${RESET} 未安装"
     if command -v snell-server &> /dev/null; then
         if systemctl is-active --quiet snell; then
-            snell_status="[${GREEN}√${RESET}] 运行中"
+            snell_status="${GREEN}√${RESET} 运行中"
         else
-            snell_status="[${YELLOW}!${RESET}] 已安装未运行"
+            snell_status="${YELLOW}!${RESET} 已安装未运行"
         fi
     fi
     if [ -f "/usr/local/bin/shadow-tls" ]; then
@@ -968,15 +968,15 @@ show_menu() {
         fi
         if [ $stls_total -gt 0 ]; then
             if [ $stls_running -gt 0 ]; then
-                shadowtls_status="[${GREEN}√${RESET}] 运行中"
+                shadowtls_status="${GREEN}√${RESET} 运行中"
             else
-                shadowtls_status="[${YELLOW}!${RESET}] 已安装未运行"
+                shadowtls_status="${YELLOW}!${RESET} 已安装未运行"
             fi
         else
-            shadowtls_status="[${GREEN}√${RESET}] 已安装"
+            shadowtls_status="${GREEN}√${RESET} 已安装"
         fi
     fi
-    echo -e "${CYAN}| [服务状态]  Snell: ${snell_status}  ShadowTLS: ${shadowtls_status} |${RESET}"
+    echo -e "${CYAN}| [服务状态]  Snell: [${snell_status}]  ShadowTLS: [${shadowtls_status}] |${RESET}"
     echo -e "${CYAN}+------------------------------------------------------+${RESET}"
     printf "| %-2s %-32s |
 " "1." "安装 Snell"
