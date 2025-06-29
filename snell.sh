@@ -939,71 +939,38 @@ setup_multi_user() {
 # 主菜单
 show_menu() {
     clear
-    echo -e "${CYAN}+------------------------------------------------------+${RESET}"
-    echo -e "${CYAN}|           Snell 管理脚本 v${current_version}                        |${RESET}"
-    echo -e "${CYAN}|  作者: Jinchenwu      网站: lovepro.com              |${RESET}"
-    echo -e "${CYAN}+------------------------------------------------------+${RESET}"
-    # 显示服务状态（精简版，主菜单顶部一行）
-    local snell_status="${RED}×${RESET} 未安装"
-    local shadowtls_status="${RED}×${RESET} 未安装"
-    if command -v snell-server &> /dev/null; then
-        if systemctl is-active --quiet snell; then
-            snell_status="${GREEN}√${RESET} 运行中"
-        else
-            snell_status="${YELLOW}!${RESET} 已安装未运行"
-        fi
-    fi
-    if [ -f "/usr/local/bin/shadow-tls" ]; then
-        local stls_running=0
-        local stls_total=0
-        local snell_services=$(find /etc/systemd/system -name "shadowtls-snell-*.service" 2>/dev/null | sort -u)
-        if [ ! -z "$snell_services" ]; then
-            while IFS= read -r service_file; do
-                local port=$(basename "$service_file" | sed 's/shadowtls-snell-\([0-9]*\)\.service/\1/')
-                stls_total=$((stls_total + 1))
-                if systemctl is-active "shadowtls-snell-${port}" &> /dev/null; then
-                    stls_running=$((stls_running + 1))
-                fi
-            done <<< "$snell_services"
-        fi
-        if [ $stls_total -gt 0 ]; then
-            if [ $stls_running -gt 0 ]; then
-                shadowtls_status="${GREEN}√${RESET} 运行中"
-            else
-                shadowtls_status="${YELLOW}!${RESET} 已安装未运行"
-            fi
-        else
-            shadowtls_status="${GREEN}√${RESET} 已安装"
-        fi
-    fi
-    echo -e "${CYAN}| [服务状态]  Snell: [${snell_status}]  ShadowTLS: [${shadowtls_status}] |${RESET}"
-    echo -e "${CYAN}+------------------------------------------------------+${RESET}"
-    printf "| %-2s %-32s |
-" "1." "安装 Snell"
-printf "| %-2s %-32s |
-" "2." "卸载 Snell"
-printf "| %-2s %-32s |
-" "3." "查看配置"
-printf "| %-2s %-32s |
-" "4." "重启服务"
-echo -e "|------------------------------------------------------|"
-printf "| %-2s %-32s |
-" "5." "ShadowTLS 管理"
-printf "| %-2s %-32s |
-" "6." "BBR 管理"
-printf "| %-2s %-32s |
-" "7." "多用户管理"
-echo -e "|------------------------------------------------------|"
-printf "| %-2s %-32s |
-" "8." "更新Snell"
-printf "| %-2s %-32s |
-" "9." "更新脚本"
-printf "| %-2s %-32s |
-" "10." "查看服务状态"
-printf "| %-2s %-32s |
-" "0." "退出脚本"
-echo -e "${CYAN}+------------------------------------------------------+${RESET}"
-read -rp "  请输入选项 [0-10]: " num
+    # 菜单宽度
+    local menu_width=58
+    local border_line
+    border_line="+"; for i in $(seq 1 $((menu_width-2))); do border_line="${border_line}-"; done; border_line="${border_line}+"
+
+    echo -e "${CYAN}${border_line}${RESET}"
+    printf "${CYAN}|%-56s|${RESET}\n" "           Snell 管理脚本 v${current_version}"
+    printf "${CYAN}|%-56s|${RESET}\n" "  作者: Jinchenwu      网站: lovepro.com"
+    echo -e "${CYAN}${border_line}${RESET}"
+
+    # 状态栏
+    local status_line_len=$((15 + ${#snell_status} + 13 + ${#shadowtls_status}))
+    local status_padding=$((menu_width-2-status_line_len))
+    printf "${CYAN}| [服务状态]  Snell: %s  ShadowTLS: %s%*s|${RESET}\n" \
+      "$snell_status" "$shadowtls_status" $status_padding ""
+
+    echo -e "${CYAN}${border_line}${RESET}"
+    printf "| %-2s %-32s%19s|\n" "1." "安装 Snell" ""
+    printf "| %-2s %-32s%19s|\n" "2." "卸载 Snell" ""
+    printf "| %-2s %-32s%19s|\n" "3." "查看配置" ""
+    printf "| %-2s %-32s%19s|\n" "4." "重启服务" ""
+    echo -e "|----------------------------------------------------------|"
+    printf "| %-2s %-32s%19s|\n" "5." "ShadowTLS 管理" ""
+    printf "| %-2s %-32s%19s|\n" "6." "BBR 管理" ""
+    printf "| %-2s %-32s%19s|\n" "7." "多用户管理" ""
+    echo -e "|----------------------------------------------------------|"
+    printf "| %-2s %-32s%19s|\n" "8." "更新Snell" ""
+    printf "| %-2s %-32s%19s|\n" "9." "更新脚本" ""
+    printf "| %-2s %-32s%19s|\n" "10." "查看服务状态" ""
+    printf "| %-2s %-32s%19s|\n" "0." "退出脚本" ""
+    echo -e "${CYAN}${border_line}${RESET}"
+    read -rp "  请输入选项 [0-10]: " num
 }
 
 #开启bbr
