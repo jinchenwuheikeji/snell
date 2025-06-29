@@ -631,22 +631,16 @@ restart_snell() {
 }
 # 检查服务状态并显示
 check_and_show_status() {
-    echo -e "\n${CYAN}=============== 服务状态检查 ===============${RESET}"
-    
+    echo -e "\n${CYAN}╔════════════════════════ 服务状态检查 ═════════════════╗${RESET}"
     # 检查 Snell 状态
     if command -v snell-server &> /dev/null; then
-        # 初始化计数器和资源使用变量
         local user_count=0
         local running_count=0
         local total_snell_memory=0
         local total_snell_cpu=0
-        
-        # 检查主服务状态
         if systemctl is-active snell &> /dev/null; then
             user_count=$((user_count + 1))
             running_count=$((running_count + 1))
-            
-            # 获取主服务资源使用情况
             local main_pid=$(systemctl show -p MainPID snell | cut -d'=' -f2)
             if [ ! -z "$main_pid" ] && [ "$main_pid" != "0" ]; then
                 local mem=$(ps -o rss= -p $main_pid 2>/dev/null)
@@ -661,8 +655,6 @@ check_and_show_status() {
         else
             user_count=$((user_count + 1))
         fi
-        
-        # 检查多用户状态
         if [ -d "${SNELL_CONF_DIR}/users" ]; then
             for user_conf in "${SNELL_CONF_DIR}/users"/*; do
                 if [ -f "$user_conf" ] && [[ "$user_conf" != *"snell-main.conf" ]]; then
@@ -671,8 +663,6 @@ check_and_show_status() {
                         user_count=$((user_count + 1))
                         if systemctl is-active --quiet "snell-${port}"; then
                             running_count=$((running_count + 1))
-                            
-                            # 获取用户服务资源使用情况
                             local user_pid=$(systemctl show -p MainPID "snell-${port}" | cut -d'=' -f2)
                             if [ ! -z "$user_pid" ] && [ "$user_pid" != "0" ]; then
                                 local mem=$(ps -o rss= -p $user_pid 2>/dev/null)
@@ -689,37 +679,31 @@ check_and_show_status() {
                 fi
             done
         fi
-        
-        # 显示 Snell 状态
         local total_snell_memory_mb=$(echo "scale=2; $total_snell_memory/1024" | bc)
-        printf "${GREEN}Snell 已安装${RESET}  ${YELLOW}CPU：%.2f%%${RESET}  ${YELLOW}内存：%.2f MB${RESET}  ${GREEN}运行中：${running_count}/${user_count}${RESET}\n" "$total_snell_cpu" "$total_snell_memory_mb"
+        local snell_status_icon="${GREEN}●${RESET}"
+        [ $running_count -eq 0 ] && snell_status_icon="${RED}●${RESET}"
+        printf "${CYAN}| %-10s | 状态: %b  进程: %2d/%-2d  CPU: ${YELLOW}%.2f%%${CYAN}  内存: ${YELLOW}%.2f MB${CYAN} |
+" "Snell" "$snell_status_icon" "$running_count" "$user_count" "$total_snell_cpu" "$total_snell_memory_mb"
     else
-        echo -e "${YELLOW}Snell 未安装${RESET}"
+        printf "${CYAN}| %-10s | %b 未安装${CYAN}                                      |
+" "Snell" "${RED}●${RESET}"
     fi
-    
     # 检查 ShadowTLS 状态
     if [ -f "/usr/local/bin/shadow-tls" ]; then
-        # 初始化 ShadowTLS 服务计数器和资源使用
         local stls_total=0
         local stls_running=0
         local total_stls_memory=0
         local total_stls_cpu=0
         declare -A processed_ports
-        
-        # 检查 Snell 的 ShadowTLS 服务
         local snell_services=$(find /etc/systemd/system -name "shadowtls-snell-*.service" 2>/dev/null | sort -u)
         if [ ! -z "$snell_services" ]; then
             while IFS= read -r service_file; do
                 local port=$(basename "$service_file" | sed 's/shadowtls-snell-\([0-9]*\)\.service/\1/')
-                
-                # 检查是否已处理过该端口
                 if [ -z "${processed_ports[$port]}" ]; then
                     processed_ports[$port]=1
                     stls_total=$((stls_total + 1))
                     if systemctl is-active "shadowtls-snell-${port}" &> /dev/null; then
                         stls_running=$((stls_running + 1))
-                        
-                        # 获取 ShadowTLS 服务资源使用情况
                         local stls_pid=$(systemctl show -p MainPID "shadowtls-snell-${port}" | cut -d'=' -f2)
                         if [ ! -z "$stls_pid" ] && [ "$stls_pid" != "0" ]; then
                             local mem=$(ps -o rss= -p $stls_pid 2>/dev/null)
@@ -735,19 +719,16 @@ check_and_show_status() {
                 fi
             done <<< "$snell_services"
         fi
-        
-        # 显示 ShadowTLS 状态
-        if [ $stls_total -gt 0 ]; then
-            local total_stls_memory_mb=$(echo "scale=2; $total_stls_memory/1024" | bc)
-            printf "${GREEN}ShadowTLS 已安装${RESET}  ${YELLOW}CPU：%.2f%%${RESET}  ${YELLOW}内存：%.2f MB${RESET}  ${GREEN}运行中：${stls_running}/${stls_total}${RESET}\n" "$total_stls_cpu" "$total_stls_memory_mb"
-        else
-            echo -e "${YELLOW}ShadowTLS 未安装${RESET}"
-        fi
+        local total_stls_memory_mb=$(echo "scale=2; $total_stls_memory/1024" | bc)
+        local stls_status_icon="${GREEN}●${RESET}"
+        [ $stls_running -eq 0 ] && stls_status_icon="${RED}●${RESET}"
+        printf "${CYAN}| %-10s | 状态: %b  进程: %2d/%-2d  CPU: ${YELLOW}%.2f%%${CYAN}  内存: ${YELLOW}%.2f MB${CYAN} |
+" "ShadowTLS" "$stls_status_icon" "$stls_running" "$stls_total" "$total_stls_cpu" "$total_stls_memory_mb"
     else
-        echo -e "${YELLOW}ShadowTLS 未安装${RESET}"
+        printf "${CYAN}| %-10s | %b 未安装${CYAN}                                      |
+" "ShadowTLS" "${RED}●${RESET}"
     fi
-    
-    echo -e "${CYAN}============================================${RESET}\n"
+    echo -e "${CYAN}╚══════════════════════════════════════════════════════╝${RESET}\n"
 }
 
 # 查看配置
@@ -1053,34 +1034,30 @@ setup_multi_user() {
 # 主菜单
 show_menu() {
     clear
-    echo -e "${CYAN}============================================${RESET}"
-    echo -e "${CYAN}          Snell 管理脚本 v${current_version}${RESET}"
-    echo -e "${CYAN}============================================${RESET}"
-    echo -e "${GREEN}作者: jinqian${RESET}"
-    echo -e "${GREEN}网站：https://jinqians.com${RESET}"
-    echo -e "${CYAN}============================================${RESET}"
+    echo -e "${CYAN}╔══════════════════════════════════════════════════════╗${RESET}"
+    echo -e "${CYAN}║        Snell 管理脚本 v${current_version}                        ║${RESET}"
+    echo -e "${CYAN}╠══════════════════════════════════════════════════════╣${RESET}"
+    echo -e "${GREEN}║ 作者: Jinchenwu   网站：lovepro.com${RESET}             "
+    echo -e "${CYAN}╚══════════════════════════════════════════════════════╝${RESET}"
     
     # 显示服务状态
     check_and_show_status
     
-    echo -e "${YELLOW}=== 基础功能 ===${RESET}"
-    echo -e "${GREEN}1.${RESET} 安装 Snell"
-    echo -e "${GREEN}2.${RESET} 卸载 Snell"
-    echo -e "${GREEN}3.${RESET} 查看配置"
-    echo -e "${GREEN}4.${RESET} 重启服务"
-    
-    echo -e "\n${YELLOW}=== 增强功能 ===${RESET}"
-    echo -e "${GREEN}5.${RESET} ShadowTLS 管理"
-    echo -e "${GREEN}6.${RESET} BBR 管理"
-    echo -e "${GREEN}7.${RESET} 多用户管理"
-    
-    echo -e "\n${YELLOW}=== 系统功能 ===${RESET}"
-    echo -e "${GREEN}8.${RESET} 更新Snell"
-    echo -e "${GREEN}9.${RESET} 更新脚本"
-    echo -e "${GREEN}10.${RESET} 查看服务状态"
-    echo -e "${GREEN}0.${RESET} 退出脚本"
-    
-    echo -e "${CYAN}============================================${RESET}"
+    echo -e "${YELLOW}┌───── 基础功能 ─────┐${RESET}"
+    printf "${GREEN} 1.${RESET} 🟢 安装 Snell\n"
+    printf "${GREEN} 2.${RESET} 🔴 卸载 Snell\n"
+    printf "${GREEN} 3.${RESET} 📄 查看配置\n"
+    printf "${GREEN} 4.${RESET} ♻️  重启服务\n"
+    echo -e "${YELLOW}├───── 增强功能 ─────┤${RESET}"
+    printf "${GREEN} 5.${RESET} 🛡️  ShadowTLS 管理\n"
+    printf "${GREEN} 6.${RESET} 🚀 BBR 管理\n"
+    printf "${GREEN} 7.${RESET} 👥 多用户管理\n"
+    echo -e "${YELLOW}├───── 系统功能 ─────┤${RESET}"
+    printf "${GREEN} 8.${RESET} 🔄 更新Snell\n"
+    printf "${GREEN} 9.${RESET} 🆙 更新脚本\n"
+    printf "${GREEN}10.${RESET} 📊 查看服务状态\n"
+    printf "${GREEN} 0.${RESET} ❌ 退出脚本\n"
+    echo -e "${CYAN}──────────────────────────────────────────────────────${RESET}"
     read -rp "请输入选项 [0-10]: " num
 }
 
