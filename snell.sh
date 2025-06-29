@@ -14,7 +14,7 @@ CYAN='\033[0;36m'
 RESET='\033[0m'
 
 #当前版本号
-current_version="4.0"
+current_version="4.1"
 
 # === 新增：备份和还原配置函数 ===
 # 备份 Snell 配置
