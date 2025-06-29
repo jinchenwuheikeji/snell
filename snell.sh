@@ -632,102 +632,7 @@ restart_snell() {
 # 检查服务状态并显示
 check_and_show_status() {
     echo -e "\n${CYAN}+------------------- 服务状态 -------------------------+${RESET}"
-    printf "${CYAN}| %-10s | %-5s | %-7s | %-7s | %-10s |${RESET}\n" "服务" "状态" "进程" "CPU" "内存"
-    echo -e "${CYAN}|------------|-------|--------|--------|------------|${RESET}"
-    # Snell 状态
-    if command -v snell-server &> /dev/null; then
-        local user_count=0
-        local running_count=0
-        local total_snell_memory=0
-        local total_snell_cpu=0
-        if systemctl is-active snell &> /dev/null; then
-            user_count=$((user_count + 1))
-            running_count=$((running_count + 1))
-            local main_pid=$(systemctl show -p MainPID snell | cut -d'=' -f2)
-            if [ ! -z "$main_pid" ] && [ "$main_pid" != "0" ]; then
-                local mem=$(ps -o rss= -p $main_pid 2>/dev/null)
-                local cpu=$(ps -o %cpu= -p $main_pid 2>/dev/null)
-                if [ ! -z "$mem" ]; then
-                    total_snell_memory=$((total_snell_memory + mem))
-                fi
-                if [ ! -z "$cpu" ]; then
-                    total_snell_cpu=$(echo "$total_snell_cpu + $cpu" | bc -l)
-                fi
-            fi
-        else
-            user_count=$((user_count + 1))
-        fi
-        if [ -d "${SNELL_CONF_DIR}/users" ]; then
-            for user_conf in "${SNELL_CONF_DIR}/users"/*; do
-                if [ -f "$user_conf" ] && [[ "$user_conf" != *"snell-main.conf" ]]; then
-                    local port=$(grep -E '^listen' "$user_conf" | sed -n 's/.*::0:\([0-9]*\)/\1/p')
-                    if [ ! -z "$port" ]; then
-                        user_count=$((user_count + 1))
-                        if systemctl is-active --quiet "snell-${port}"; then
-                            running_count=$((running_count + 1))
-                            local user_pid=$(systemctl show -p MainPID "snell-${port}" | cut -d'=' -f2)
-                            if [ ! -z "$user_pid" ] && [ "$user_pid" != "0" ]; then
-                                local mem=$(ps -o rss= -p $user_pid 2>/dev/null)
-                                local cpu=$(ps -o %cpu= -p $user_pid 2>/dev/null)
-                                if [ ! -z "$mem" ]; then
-                                    total_snell_memory=$((total_snell_memory + mem))
-                                fi
-                                if [ ! -z "$cpu" ]; then
-                                    total_snell_cpu=$(echo "$total_snell_cpu + $cpu" | bc -l)
-                                fi
-                            fi
-                        fi
-                    fi
-                fi
-            done
-        fi
-        local total_snell_memory_mb=$(echo "scale=2; $total_snell_memory/1024" | bc)
-        local snell_status="[${RED}×${RESET}]"
-        [ $running_count -gt 0 ] && snell_status="[${GREEN}√${RESET}]"
-        [ $running_count -eq 0 ] && [ $user_count -gt 0 ] && snell_status="[${YELLOW}!${RESET}]"
-        printf "${CYAN}| %-10s | %-5s | %2d/%-4d | ${YELLOW}%-6.2f${CYAN} | ${YELLOW}%-8.2f${CYAN} |${RESET}\n" "Snell" "$snell_status" "$running_count" "$user_count" "$total_snell_cpu" "$total_snell_memory_mb"
-    else
-        printf "${CYAN}| %-10s | %-5s | %-7s | %-7s | %-10s |${RESET}\n" "Snell" "[${RED}×${RESET}]" "-" "-" "-"
-    fi
-    # ShadowTLS 状态
-    if [ -f "/usr/local/bin/shadow-tls" ]; then
-        local stls_total=0
-        local stls_running=0
-        local total_stls_memory=0
-        local total_stls_cpu=0
-        declare -A processed_ports
-        local snell_services=$(find /etc/systemd/system -name "shadowtls-snell-*.service" 2>/dev/null | sort -u)
-        if [ ! -z "$snell_services" ]; then
-            while IFS= read -r service_file; do
-                local port=$(basename "$service_file" | sed 's/shadowtls-snell-\([0-9]*\)\.service/\1/')
-                if [ -z "${processed_ports[$port]}" ]; then
-                    processed_ports[$port]=1
-                    stls_total=$((stls_total + 1))
-                    if systemctl is-active "shadowtls-snell-${port}" &> /dev/null; then
-                        stls_running=$((stls_running + 1))
-                        local stls_pid=$(systemctl show -p MainPID "shadowtls-snell-${port}" | cut -d'=' -f2)
-                        if [ ! -z "$stls_pid" ] && [ "$stls_pid" != "0" ]; then
-                            local mem=$(ps -o rss= -p $stls_pid 2>/dev/null)
-                            local cpu=$(ps -o %cpu= -p $stls_pid 2>/dev/null)
-                            if [ ! -z "$mem" ]; then
-                                total_stls_memory=$((total_stls_memory + mem))
-                            fi
-                            if [ ! -z "$cpu" ]; then
-                                total_stls_cpu=$(echo "$total_stls_cpu + $cpu" | bc -l)
-                            fi
-                        fi
-                    fi
-                fi
-            done <<< "$snell_services"
-        fi
-        local total_stls_memory_mb=$(echo "scale=2; $total_stls_memory/1024" | bc)
-        local stls_status="[${RED}×${RESET}]"
-        [ $stls_running -gt 0 ] && stls_status="[${GREEN}√${RESET}]"
-        [ $stls_running -eq 0 ] && [ $stls_total -gt 0 ] && stls_status="[${YELLOW}!${RESET}]"
-        printf "${CYAN}| %-10s | %-5s | %2d/%-4d | ${YELLOW}%-6.2f${CYAN} | ${YELLOW}%-8.2f${CYAN} |${RESET}\n" "ShadowTLS" "$stls_status" "$stls_running" "$stls_total" "$total_stls_cpu" "$total_stls_memory_mb"
-    else
-        printf "${CYAN}| %-10s | %-5s | %-7s | %-7s | %-10s |${RESET}\n" "ShadowTLS" "[${RED}×${RESET}]" "-" "-" "-"
-    fi
+    echo -e "${CYAN}| [服务状态]  Snell: ${snell_status}  ShadowTLS: ${shadowtls_status} |${RESET}"
     echo -e "${CYAN}+-----------------------------------------------------+${RESET}\n"
 }
 
@@ -1071,7 +976,7 @@ show_menu() {
             shadowtls_status="[${GREEN}√${RESET}] 已安装"
         fi
     fi
-    printf "${CYAN}| [服务状态]  Snell: %-16s ShadowTLS: %-16s |${RESET}\n" "$snell_status" "$shadowtls_status"
+    echo -e "${CYAN}| [服务状态]  Snell: ${snell_status}  ShadowTLS: ${shadowtls_status} |${RESET}"
     echo -e "${CYAN}+------------------------------------------------------+${RESET}"
     printf "| %-2s %-32s |
 " "1." "安装 Snell"
