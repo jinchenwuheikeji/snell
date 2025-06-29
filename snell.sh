@@ -940,35 +940,35 @@ setup_multi_user() {
 show_menu() {
     clear
     # 菜单宽度
-    local menu_width=58
+    local menu_width=48
     local border_line
     border_line="+"; for i in $(seq 1 $((menu_width-2))); do border_line="${border_line}-"; done; border_line="${border_line}+"
 
     echo -e "${CYAN}${border_line}${RESET}"
-    printf "${CYAN}|%-56s|${RESET}\n" "           Snell 管理脚本 v${current_version}"
-    printf "${CYAN}|%-56s|${RESET}\n" "  作者: Jinchenwu      网站: lovepro.com"
+    printf "${CYAN}|%-46s${RESET}\n" "           Snell 管理脚本 v${current_version}"
+    printf "${CYAN}|%-46s${RESET}\n" "  作者: Jinchenwu      网站: lovepro.com"
     echo -e "${CYAN}${border_line}${RESET}"
 
     # 状态栏
     local status_line_len=$((15 + ${#snell_status} + 13 + ${#shadowtls_status}))
-    local status_padding=$((menu_width-2-status_line_len))
-    printf "${CYAN}| [服务状态]  Snell: %s  ShadowTLS: %s%*s|${RESET}\n" \
+    local status_padding=$((menu_width-1-status_line_len))
+    printf "${CYAN}| [服务状态]  Snell: %s  ShadowTLS: %s%*s${RESET}\n" \
       "$snell_status" "$shadowtls_status" $status_padding ""
 
     echo -e "${CYAN}${border_line}${RESET}"
-    printf "| %-2s %-32s%19s|\n" "1." "安装 Snell" ""
-    printf "| %-2s %-32s%19s|\n" "2." "卸载 Snell" ""
-    printf "| %-2s %-32s%19s|\n" "3." "查看配置" ""
-    printf "| %-2s %-32s%19s|\n" "4." "重启服务" ""
-    echo -e "|----------------------------------------------------------|"
-    printf "| %-2s %-32s%19s|\n" "5." "ShadowTLS 管理" ""
-    printf "| %-2s %-32s%19s|\n" "6." "BBR 管理" ""
-    printf "| %-2s %-32s%19s|\n" "7." "多用户管理" ""
-    echo -e "|----------------------------------------------------------|"
-    printf "| %-2s %-32s%19s|\n" "8." "更新Snell" ""
-    printf "| %-2s %-32s%19s|\n" "9." "更新脚本" ""
-    printf "| %-2s %-32s%19s|\n" "10." "查看服务状态" ""
-    printf "| %-2s %-32s%19s|\n" "0." "退出脚本" ""
+    printf "| %-2s %-28s\n" "1." "安装 Snell"
+    printf "| %-2s %-28s\n" "2." "卸载 Snell"
+    printf "| %-2s %-28s\n" "3." "查看配置"
+    printf "| %-2s %-28s\n" "4." "重启服务"
+    echo -e "|----------------------------------------------"
+    printf "| %-2s %-28s\n" "5." "ShadowTLS 管理"
+    printf "| %-2s %-28s\n" "6." "BBR 管理"
+    printf "| %-2s %-28s\n" "7." "多用户管理"
+    echo -e "|----------------------------------------------"
+    printf "| %-2s %-28s\n" "8." "更新Snell"
+    printf "| %-2s %-28s\n" "9." "更新脚本"
+    printf "| %-2s %-28s\n" "10." "查看服务状态"
+    printf "| %-2s %-28s\n" "0." "退出脚本"
     echo -e "${CYAN}${border_line}${RESET}"
     read -rp "  请输入选项 [0-10]: " num
 }
